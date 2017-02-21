@@ -7,7 +7,6 @@ import de.dfki.mary.ttsanalysis.AnalysisInterface
 
 import marytts.analysis.distances.acoustic.*;
 import marytts.analysis.alignment.IDAlignment;
-import marytts.analysis.utils.LoadingHelpers;
 
 class ProsodyAnalysis implements AnalysisInterface
 {
@@ -20,8 +19,7 @@ class ProsodyAnalysis implements AnalysisInterface
             outputs.files output_f
 
             doLast {
-                def loading = new LoadingHelpers();
-                output_f.text = "#id\trms(cent)\n"
+                output_f.text = "#id\trms (cent)\n"
 
                 project.list_file.eachLine { line ->
                     // Loading files
@@ -67,16 +65,16 @@ class ProsodyAnalysis implements AnalysisInterface
             // FIXME: input file ?
             def output_f = new File("${project.acousticOutputDir}/voicing_error.csv")
             outputs.files output_f
+
             doLast {
-                def loading = new LoadingHelpers();
-                output_f.text = "#id\tvuv(%)\n"
+                output_f.text = "#id\tvuv (%)\n"
 
                 project.list_file.eachLine { line ->
                     // Loading files
                     double[][] src =
                         project.loading.loadFloatBinary("${project.referenceDir['lf0']}/${line}.lf0", 1);
                     double[][] tgt =
-                        project.loading.loadFloatBinary("${project.synthesizeDir}/${line}.lf0", 1);
+                        project.loading.loadFloatBinary("${project.synthesizeDir['lf0']}/${line}.lf0", 1);
 
                     //  Transform LF0 => F0
                     def nb_frames = Math.min(src.length, tgt.length)
