@@ -15,7 +15,7 @@ class ProsodyAnalysis implements AnalysisInterface
         project.task("computeRMSEF0Cent")
         {
             // FIXME: input file ?
-            def output_f = new File("${project.acousticOutputDir}/rms_f0.csv")
+            def output_f = new File("${project.acousticOutputDir}/rms_f0_cent.csv")
             outputs.files output_f
 
             doLast {
