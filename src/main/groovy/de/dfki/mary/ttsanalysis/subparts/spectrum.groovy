@@ -6,7 +6,6 @@ import de.dfki.mary.ttsanalysis.AnalysisInterface
 
 import marytts.analysis.distances.acoustic.*;
 import marytts.analysis.alignment.IDAlignment;
-import marytts.analysis.utils.LoadingHelpers;
 
 class SpectrumAnalysis implements AnalysisInterface
 {
@@ -18,7 +17,6 @@ class SpectrumAnalysis implements AnalysisInterface
             def output_f = new File("${project.acousticOutputDir}/mcdist.csv")
             outputs.files output_f
             doLast {
-                def loading = new LoadingHelpers();
                 output_f.text = "#id\tmcdist\n"
 
                 project.list_file.eachLine { line ->
