@@ -6,7 +6,6 @@ import de.dfki.mary.ttsanalysis.AnalysisInterface
 
 import marytts.analysis.distances.acoustic.*;
 import marytts.analysis.alignment.IDAlignment;
-import marytts.analysis.utils.LoadingHelpers;
 
 
 class DurationAnalysis implements AnalysisInterface
@@ -18,8 +17,8 @@ class DurationAnalysis implements AnalysisInterface
             // FIXME: input file ?
             def output_f = new File("${project.acousticOutputDir}/rms_dur.csv")
             outputs.files output_f
+
             doLast {
-                def loading = new LoadingHelpers();
                 output_f.text = "#id\trms (ms)\n"
 
                 project.list_file.eachLine { line ->

@@ -71,8 +71,8 @@ class TTSAnalysisPlugin implements Plugin<Project>
             acousticOutputDir = new File(project.rootProject.buildDir.toString() + "/acousticAnalysis")
             // FIXME: externalize that !
             list_file = new File(DataFileFinder.getFilePath("list_test"))
-            referenceDir = ["mgc": "../extraction/build/mgc", "lf0": "../extraction/build/lf0"]
-            synthesizeDir = ["mgc": "../synthesis/build/output/imposed_dur", "lf0": "../synthesis/build/output/imposed_dur"]
+            referenceDir = ["mgc": "../extraction/build/mgc", "lf0": "../extraction/build/lf0", "dur":DataFileFinder.getFilePath(config.data.full_lab_dir)]
+            synthesizeDir = ["mgc": "../synthesis/build/output/imposed_dur", "lf0": "../synthesis/build/output/imposed_dur", "dur": "../synthesis/build/output/normal"]
             mgcDim = 50;
 
             nb_proc = nb_proc_local;
@@ -111,7 +111,7 @@ class TTSAnalysisPlugin implements Plugin<Project>
 
 
             project.task("generateAcousticReport") {
-                dependsOn "computeMCDIST", "computeVUVRate", "computeRMSEF0Cent"
+                dependsOn "computeMCDIST", "computeVUVRate", "computeRMSEF0Cent", "computeRMSEDur"
             }
         }
     }
