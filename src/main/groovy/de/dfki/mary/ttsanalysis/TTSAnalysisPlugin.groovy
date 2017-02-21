@@ -19,6 +19,8 @@ import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 
 import marytts.analysis.utils.LoadingHelpers;
+import marytts.analysis.Statistics;
+
 import de.dfki.mary.ttsanalysis.subparts.*
 
 class TTSAnalysisPlugin implements Plugin<Project>
@@ -112,6 +114,79 @@ class TTSAnalysisPlugin implements Plugin<Project>
 
             project.task("generateAcousticReport") {
                 dependsOn "computeMCDIST", "computeVUVRate", "computeRMSEF0Cent", "computeRMSEDur"
+
+
+                def input_rms_f0_cent = new File("${project.acousticOutputDir}/rms_f0_cent.csv")
+                def input_vuvrate = new File("${project.acousticOutputDir}/voicing_error.csv")
+                def input_mcdist = new File("${project.acousticOutputDir}/mcdist.csv")
+                def input_rms_dur = new File("${project.acousticOutputDir}/rms_dur.csv")
+
+
+                def output_f = new File("${project.acousticOutputDir}/global_report.csv")
+                outputs.files output_f
+
+                doLast {
+
+                    output_f.text = "#id\tmean\tstd\tconfint\n"
+
+                    // RMS DUR part
+                    def values = []
+                    input_rms_dur.eachLine { line ->
+                        if (line.startsWith("#"))
+                            return; // Continue...
+
+                            def elts = line.split()
+                            values << Double.parseDouble(elts[1])
+                    }
+                    def dist = new Double[values.size()];
+                    values.toArray(dist);
+                    def s = new Statistics(dist);
+                    output_f << "rms dur\t" << s.mean() << "\t" << s.stddev() << "\t" << s.confint(0.05) << "\n"
+
+
+                    // RMS F0 part
+                    values = []
+                    input_rms_f0_cent.eachLine { line ->
+                        if (line.startsWith("#"))
+                            return; // Continue...
+
+                            def elts = line.split()
+                            values << Double.parseDouble(elts[1])
+                    }
+                    dist = new Double[values.size()];
+                    values.toArray(dist);
+                    s = new Statistics(dist);
+                    output_f << "rms f0\t" << s.mean() << "\t" << s.stddev() << "\t" << s.confint(0.05) << "\n"
+
+
+                    // Voice/Unvoice error rate part
+                    values = []
+                    input_vuvrate.eachLine { line ->
+                        if (line.startsWith("#"))
+                            return; // Continue...
+
+                            def elts = line.split()
+                            values << Double.parseDouble(elts[1])
+                    }
+                    dist = new Double[values.size()];
+                    values.toArray(dist);
+                    s = new Statistics(dist);
+                    output_f << "vuvrate\t" << s.mean() << "\t" << s.stddev() << "\t" << s.confint(0.05) << "\n"
+
+                    // Mel CepstralDistorsion part
+                    values = []
+                    input_mcdist.eachLine { line ->
+                        if (line.startsWith("#"))
+                            return; // Continue...
+
+                            def elts = line.split()
+                            values << Double.parseDouble(elts[1])
+                    }
+                    dist = new Double[values.size()];
+                    values.toArray(dist);
+                    s = new Statistics(dist);
+                    output_f << "mcdist\t" << s.mean() << "\t" << s.stddev() << "\t" << s.confint(0.05) << "\n"
+                }
             }
         }
     }
