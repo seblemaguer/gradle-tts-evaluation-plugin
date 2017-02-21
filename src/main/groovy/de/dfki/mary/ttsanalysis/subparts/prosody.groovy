@@ -5,6 +5,10 @@ import org.gradle.api.Project
 import de.dfki.mary.ttsanalysis.AnalysisInterface
 
 
+import marytts.analysis.distances.acoustic.*;
+import marytts.analysis.alignment.IDAlignment;
+import marytts.analysis.utils.LoadingHelpers;
+
 class ProsodyAnalysis implements AnalysisInterface
 {
     public void addTasks(Project project)

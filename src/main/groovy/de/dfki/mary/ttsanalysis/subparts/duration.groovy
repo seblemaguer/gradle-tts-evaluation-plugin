@@ -4,6 +4,10 @@ import org.gradle.api.Project
 
 import de.dfki.mary.ttsanalysis.AnalysisInterface
 
+import marytts.analysis.distances.acoustic.*;
+import marytts.analysis.alignment.IDAlignment;
+import marytts.analysis.utils.LoadingHelpers;
+
 
 class DurationAnalysis implements AnalysisInterface
 {
@@ -17,15 +21,12 @@ class DurationAnalysis implements AnalysisInterface
             doLast {
                 def loading = new LoadingHelpers();
                 output_f.text = "#id\trms (ms)\n"
-            doLast {
 
-                output_f.text = "#id\trms (ms)\n"
-
-                list_file.eachLine { line ->
+                project.list_file.eachLine { line ->
 
                     // Loading reference labels
                     def ref_dur_list = []
-                    (new File("${project.referenceDir['dur']}/${line}.lab")).eachLine { label -> // FIXME: hardcoded reference name
+                    (new File("${project.referenceDir['dur']}/${line}.lab")).eachLine { label ->
                         def elts = label.split()
                         ref_dur_list << (elts[1].toInteger() - elts[0].toInteger())/ 10000
                     }
@@ -36,7 +37,7 @@ class DurationAnalysis implements AnalysisInterface
 
                     // Loading synthesized labels
                     def synth_dur_list = []
-                    (new File("${project.synthesizeDir['dur']}/${line}.lab")).eachLine { label -> // FIXME: hardcoded synth name
+                    (new File("${project.synthesizeDir['dur']}/${line}.lab")).eachLine { label ->
                         def elts = label.split()
                         synth_dur_list << (elts[1].toInteger() - elts[0].toInteger())/ 10000
                     }
