@@ -13,27 +13,37 @@ class SpectrumAnalysis implements AnalysisInterface
     {
         project.task("computeMCDIST")
         {
-            // FIXME: input file ?
-            def output_f = new File("${project.acousticOutputDir}/mcdist.csv")
+            // Hooking
+            dependsOn "configurationAcoustic"
+
+            // Input files
+            project.configurationAcoustic.list_basenames.each { line ->
+                inputs.files "${project.configurationAcoustic.reference_dir['mgc']}/${line}.mgc"
+                inputs.files "${project.configurationAcoustic.synthesize_dir['mgc']}/${line}.mgc"
+            }
+
+            // Output files
+            ext.output_f = new File("${project.configurationAcoustic.output_dir}/mcdist.csv")
             outputs.files output_f
+
             doLast {
                 output_f.text = "#id\tmcdist\n"
 
-                project.list_file.eachLine { line ->
+                project.configurationAcoustic.list_basenames.each { line ->
                     // Load files
                     double[][] src =
-                        project.loading.loadFloatBinary("${project.referenceDir['mgc']}/${line}.mgc",
-                                                        project.mgcDim)
+                        project.configurationAcoustic.loading.loadFloatBinary("${project.configurationAcoustic.reference_dir['mgc']}/${line}.mgc",
+                                                        project.configurationAcoustic.mgc_dim)
                     double[][] tgt =
-                        project.loading.loadFloatBinary("${project.synthesizeDir['mgc']}/${line}.mgc",
-                                                        project.mgcDim);
+                        project.configurationAcoustic.loading.loadFloatBinary("${project.configurationAcoustic.synthesize_dir['mgc']}/${line}.mgc",
+                                                        project.configurationAcoustic.mgc_dim);
 
 
                     def nb_frames = Math.min(src.length, tgt.length)
 
                     // Compute and dump the distance
                     def alignment = new IDAlignment(nb_frames);
-                    def v = new CepstralDistorsion(src, tgt, project.mgcDim);
+                    def v = new CepstralDistorsion(src, tgt, project.configurationAcoustic.mgc_dim);
                     Double d = v.distancePerUtterance(alignment);
                     output_f << "$line\t$d\n";
                 }

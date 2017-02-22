@@ -12,21 +12,87 @@ class ProsodyAnalysis implements AnalysisInterface
 {
     public void addTasks(Project project)
     {
-        project.task("computeRMSEF0Cent")
+        project.task("computeRMSEF0Hertz")
         {
-            // FIXME: input file ?
-            def output_f = new File("${project.acousticOutputDir}/rms_f0_cent.csv")
+            // Hooking
+            dependsOn "configurationAcoustic"
+
+            // Input files
+            project.configurationAcoustic.list_basenames.each { line ->
+                inputs.files "${project.configurationAcoustic.reference_dir['lf0']}/${line}.lf0"
+                inputs.files "${project.configurationAcoustic.synthesize_dir['lf0']}/${line}.lf0"
+            }
+
+            // Output files
+            ext.output_f = new File("${project.configurationAcoustic.output_dir}/rms_f0_hz.csv")
             outputs.files output_f
 
             doLast {
                 output_f.text = "#id\trms (cent)\n"
 
-                project.list_file.eachLine { line ->
+                project.configurationAcoustic.list_basenames.each { line ->
                     // Loading files
                     double[][] src =
-                        project.loading.loadFloatBinary("${project.referenceDir['lf0']}/${line}.lf0", 1);
+                        project.configurationAcoustic.loading.loadFloatBinary("${project.configurationAcoustic.reference_dir['lf0']}/${line}.lf0", 1);
                     double[][] tgt =
-                        project.loading.loadFloatBinary("${project.synthesizeDir['lf0']}/${line}.lf0", 1);
+                        project.configurationAcoustic.loading.loadFloatBinary("${project.configurationAcoustic.synthesize_dir['lf0']}/${line}.lf0", 1);
+
+                    //  Transform LF0 => F0
+                    def nb_frames = Math.min(src.length, tgt.length)
+                    for (int i=0; i<nb_frames; i++)
+                    {
+                        if (src[i][0] != -1.0e+10)
+                        {
+                            src[i][0] = Math.exp(src[i][0])
+                        }
+                        else
+                        {
+                            src[i][0] = 0;
+                        }
+
+                        if (tgt[i][0] != -1.0e+10)
+                        {
+                            tgt[i][0] = Math.exp(tgt[i][0])
+                        }
+                        else
+                        {
+                            tgt[i][0] = 0;
+                        }
+                    }
+
+                    // Compute and dump the distance
+                    def alignment = new IDAlignment(nb_frames);
+                    def v = new CentRMS(src, tgt, 0.0);
+                    Double d = v.distancePerUtterance(alignment);
+                    output_f << "$line\t$d\n";
+                }
+            }
+        }
+
+        project.task("computeRMSEF0Cent")
+        {
+            // Hooking
+            dependsOn "configurationAcoustic"
+
+            // Input files
+            project.configurationAcoustic.list_basenames.each { line ->
+                inputs.files "${project.configurationAcoustic.reference_dir['lf0']}/${line}.lf0"
+                inputs.files "${project.configurationAcoustic.synthesize_dir['lf0']}/${line}.lf0"
+            }
+
+            // Output files
+            ext.output_f = new File("${project.configurationAcoustic.output_dir}/rms_f0_cent.csv")
+            outputs.files output_f
+
+            doLast {
+                output_f.text = "#id\trms (cent)\n"
+
+                project.configurationAcoustic.list_basenames.each { line ->
+                    // Loading files
+                    double[][] src =
+                        project.configurationAcoustic.loading.loadFloatBinary("${project.configurationAcoustic.reference_dir['lf0']}/${line}.lf0", 1);
+                    double[][] tgt =
+                        project.configurationAcoustic.loading.loadFloatBinary("${project.configurationAcoustic.synthesize_dir['lf0']}/${line}.lf0", 1);
 
                     //  Transform LF0 => F0
                     def nb_frames = Math.min(src.length, tgt.length)
@@ -62,19 +128,28 @@ class ProsodyAnalysis implements AnalysisInterface
 
         project.task("computeVUVRate")
         {
-            // FIXME: input file ?
-            def output_f = new File("${project.acousticOutputDir}/voicing_error.csv")
+            // Hooking
+            dependsOn "configurationAcoustic"
+
+            // Input files
+            project.configurationAcoustic.list_basenames.each { line ->
+                inputs.files "${project.configurationAcoustic.reference_dir['lf0']}/${line}.lf0"
+                inputs.files "${project.configurationAcoustic.synthesize_dir['lf0']}/${line}.lf0"
+            }
+
+            // Output files
+            ext.output_f = new File("${project.configurationAcoustic.output_dir}/voicing_error.csv")
             outputs.files output_f
 
             doLast {
                 output_f.text = "#id\tvuv (%)\n"
 
-                project.list_file.eachLine { line ->
+                project.configurationAcoustic.list_basenames.each { line ->
                     // Loading files
                     double[][] src =
-                        project.loading.loadFloatBinary("${project.referenceDir['lf0']}/${line}.lf0", 1);
+                        project.configurationAcoustic.loading.loadFloatBinary("${project.configurationAcoustic.reference_dir['lf0']}/${line}.lf0", 1);
                     double[][] tgt =
-                        project.loading.loadFloatBinary("${project.synthesizeDir['lf0']}/${line}.lf0", 1);
+                        project.configurationAcoustic.loading.loadFloatBinary("${project.configurationAcoustic.synthesize_dir['lf0']}/${line}.lf0", 1);
 
                     //  Transform LF0 => F0
                     def nb_frames = Math.min(src.length, tgt.length)

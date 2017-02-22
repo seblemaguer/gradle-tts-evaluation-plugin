@@ -14,18 +14,27 @@ class DurationAnalysis implements AnalysisInterface
     {
         project.task('computeRMSEDur')
         {
-            // FIXME: input file ?
-            def output_f = new File("${project.acousticOutputDir}/rms_dur.csv")
+            // Hooking
+            dependsOn "configurationAcoustic"
+
+            // Input files
+            project.configurationAcoustic.list_basenames.each { line ->
+                inputs.files "${project.configurationAcoustic.reference_dir['dur']}/${line}.lab"
+                inputs.files "${project.configurationAcoustic.synthesize_dir['dur']}/${line}.lab"
+            }
+
+            // Output file
+            ext.output_f = new File("${project.configurationAcoustic.output_dir}/rms_dur.csv")
             outputs.files output_f
 
             doLast {
                 output_f.text = "#id\trms (ms)\n"
 
-                project.list_file.eachLine { line ->
+                project.configurationAcoustic.list_basenames.each { line ->
 
                     // Loading reference labels
                     def ref_dur_list = []
-                    (new File("${project.referenceDir['dur']}/${line}.lab")).eachLine { label ->
+                    (new File("${project.configurationAcoustic.reference_dir['dur']}/${line}.lab")).eachLine { label ->
                         def elts = label.split()
                         ref_dur_list << (elts[1].toInteger() - elts[0].toInteger())/ 10000
                     }
@@ -36,7 +45,7 @@ class DurationAnalysis implements AnalysisInterface
 
                     // Loading synthesized labels
                     def synth_dur_list = []
-                    (new File("${project.synthesizeDir['dur']}/${line}.lab")).eachLine { label ->
+                    (new File("${project.configurationAcoustic.synthesize_dir['dur']}/${line}.lab")).eachLine { label ->
                         def elts = label.split()
                         synth_dur_list << (elts[1].toInteger() - elts[0].toInteger())/ 10000
                     }

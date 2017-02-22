@@ -35,49 +35,9 @@ class TTSAnalysisPlugin implements Plugin<Project>
         project.sourceCompatibility = JavaVersion.VERSION_1_7
 
 
-        // Load configuration
-        def slurper = new JsonSlurper()
-        def config_file = project.rootProject.ext.config_file
-        def config = slurper.parseText( config_file.text )
-
-        // Adapt pathes
-        DataFileFinder.project_path = new File(getClass().protectionDomain.codeSource.location.path).parent
-        if (config.data.project_dir) {
-            DataFileFinder.project_path = config.data.project_dir
-}
-
-        // See for number of processes for parallel mode
-        def nb_proc_local = 1
-        if (project.gradle.startParameter.getMaxWorkerCount() != 0) {
-            nb_proc_local = Runtime.getRuntime().availableProcessors(); // By default the number of core
-            if (config.settings.nb_proc) {
-                if (config.settings.nb_proc > nb_proc_local) {
-                    throw Exception("You will overload your machine, preventing stop !")
-                }
-
-                nb_proc_local = config.settings.nb_proc
-            }
-        }
-
+        // Create output
         (new File(project.rootProject.buildDir.toString() + "/acousticAnalysis")).mkdirs()
 
-        project.ext {
-            // User configuration
-            user_configuration = config;
-
-            acousticOutputDir = new File(project.rootProject.buildDir.toString() + "/acousticAnalysis")
-            // FIXME: externalize that !
-            list_file = new File(DataFileFinder.getFilePath("list_test"))
-            referenceDir = ["mgc": "../extraction/build/mgc", "lf0": "../extraction/build/lf0", "dur":DataFileFinder.getFilePath(config.data.full_lab_dir)]
-            synthesizeDir = ["mgc": "../synthesis/build/output/imposed_dur", "lf0": "../synthesis/build/output/imposed_dur", "dur": "../synthesis/build/output/normal"]
-            mgcDim = 50;
-
-            nb_proc = nb_proc_local;
-
-            loading = new LoadingHelpers();
-        }
-
-        project.status = project.version.endsWith('SNAPSHOT') ? 'integration' : 'release'
 
         project.repositories {
             jcenter()
@@ -86,22 +46,34 @@ class TTSAnalysisPlugin implements Plugin<Project>
             }
         }
 
-        project.configurations.create 'legacy'
-
-        project.sourceSets {
-            main {
-                java {
-                    // srcDir project.generatedSrcDir
-                }
-            }
-            test {
-                java {
-                    // srcDir project.generatedTestSrcDir
-                }
-            }
-        }
 
         project.afterEvaluate {
+
+            /*************************************************************
+             ** Configuration of the plugin
+             *************************************************************/
+            project.task("configurationAcoustic") {
+                dependsOn "configuration"
+
+                // Input
+                ext.list_basenames = project.configuration.list_basenames ? project.configuration.list_basenames : []
+                ext.reference_dir = project.configuration.reference_dir ? project.configuration.reference_dir:[]
+                ext.synthesize_dir = project.configuration.synthesize_dir ? project.configuration.synthesize_dir:[]
+
+
+                // Some parameters
+                ext.mgc_dim = project.configuration.mgc_dim ? project.configuration.mgc_dim : 50
+                ext.nb_proc = project.configuration.nb_proc ? project.configuration.nb_proc : 1
+
+                // Outputdir
+                ext.output_dir = new File(project.rootProject.buildDir.toString() + "/acousticAnalysis");
+
+                // Loading helping
+                ext.loading = new LoadingHelpers();
+            }
+
+
+
             (new DurationAnalysis()).addTasks(project)
             (new SpectrumAnalysis()).addTasks(project)
             (new ProsodyAnalysis()).addTasks(project)
@@ -111,21 +83,22 @@ class TTSAnalysisPlugin implements Plugin<Project>
                 dependsOn "computeMCDIST", "computeVUVRate", "computeRMSEF0Cent", "computeRMSEDur"
 
 
-                def input_rms_f0_cent = new File("${project.acousticOutputDir}/rms_f0_cent.csv")
-                def input_vuvrate = new File("${project.acousticOutputDir}/voicing_error.csv")
-                def input_mcdist = new File("${project.acousticOutputDir}/mcdist.csv")
-                def input_rms_dur = new File("${project.acousticOutputDir}/rms_dur.csv")
+                def input_rms_f0_cent = project.computeRMSEF0Cent.output_f
+                def input_vuvrate = project.computeVUVRate.output_f
+                def input_mcdist = project.computeMCDIST.output_f
+                def input_rms_dur = project.computeRMSEDur.output_f
 
-
-                def output_f = new File("${project.acousticOutputDir}/global_report.csv")
+                def output_f = new File("${project.configurationAcoustic.output_dir}/global_report.csv")
                 outputs.files output_f
 
                 doLast {
-
+                    def values = []
+                    def dist = null
+                    def s = null
                     output_f.text = "#id\tmean\tstd\tconfint\n"
 
                     // RMS DUR part
-                    def values = []
+                    values = []
                     input_rms_dur.eachLine { line ->
                         if (line.startsWith("#"))
                             return; // Continue...
@@ -133,9 +106,9 @@ class TTSAnalysisPlugin implements Plugin<Project>
                             def elts = line.split()
                             values << Double.parseDouble(elts[1])
                     }
-                    def dist = new Double[values.size()];
+                    dist = new Double[values.size()];
                     values.toArray(dist);
-                    def s = new Statistics(dist);
+                    s = new Statistics(dist);
                     output_f << "rms dur\t" << s.mean() << "\t" << s.stddev() << "\t" << s.confint(0.05) << "\n"
 
 
