@@ -28,11 +28,6 @@ class TTSAnalysisPlugin implements Plugin<Project>
     @Override
     void apply(Project project)
     {
-        project.task('hello') {
-            doLast {
-                println "Hello from the GreetingPlugin"
-            }
-        }
 
         project.plugins.apply JavaPlugin
         project.plugins.apply MavenPlugin
