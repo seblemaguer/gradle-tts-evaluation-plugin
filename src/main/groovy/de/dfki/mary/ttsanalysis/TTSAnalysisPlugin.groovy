@@ -56,17 +56,18 @@ class TTSAnalysisPlugin implements Plugin<Project>
                 dependsOn "configuration"
 
                 // Input
-                ext.list_basenames = project.configuration.list_basenames ? project.configuration.list_basenames : []
-                ext.reference_dir = project.configuration.reference_dir ? project.configuration.reference_dir:[]
-                ext.synthesize_dir = project.configuration.synthesize_dir ? project.configuration.synthesize_dir:[]
+                ext.list_basenames = project.configuration.hasProperty("list_basenames") ? project.configuration.list_basenames : []
+                ext.reference_dir = project.configuration.hasProperty("reference_dir") ? project.configuration.reference_dir : []
+                ext.synthesize_dir = project.configuration.hasProperty("synthesize_dir") ? project.configuration.synthesize_dir : []
 
 
                 // Some parameters
-                ext.mgc_dim = project.configuration.mgc_dim ? project.configuration.mgc_dim : 50
-                ext.nb_proc = project.configuration.nb_proc ? project.configuration.nb_proc : 1
+                ext.mgc_dim = project.configuration.hasProperty("mgc_dim") ? project.configuration.mgc_dim : 50
+                ext.nb_proc = project.configuration.hasProperty("nb_proc") ? project.configuration.nb_proc : 1
 
                 // Outputdir
-                ext.output_dir = new File(project.rootProject.buildDir.toString() + "/acousticAnalysis");
+                ext.output_dir = new File(project.rootProject.buildDir.toString() + "/output/acousticAnalysis");
+                ext.output_dir.mkdirs()
 
                 // Loading helping
                 ext.loading = new LoadingHelpers();
@@ -80,13 +81,26 @@ class TTSAnalysisPlugin implements Plugin<Project>
 
 
             project.task("generateAcousticReport") {
-                dependsOn "computeMCDIST", "computeVUVRate", "computeRMSEF0Cent", "computeRMSEDur"
 
+                def input = []
+                if (project.configurationAcoustic.reference_dir.containsKey("lf0"))
+                {
+                    dependsOn "computeVUVRate", "computeRMSEF0Cent", "computeRMSEF0Hz"
+                    input << project.computeRMSEF0Cent.output_f
+                    input << project.computeRMSEF0Hz.output_f
+                    input << project.computeVUVRate.output_f
+                }
+                if (project.configurationAcoustic.reference_dir.containsKey("mgc"))
+                {
+                    dependsOn "computeMCDIST"
+                    input << project.computeMCDIST.output_f
+                }
+                if (project.configurationAcoustic.reference_dir.containsKey("dur"))
+                {
+                    dependsOn "computeRMSEDur"
+                    input << project.computeRMSEDur.output_f
+                }
 
-                def input_rms_f0_cent = project.computeRMSEF0Cent.output_f
-                def input_vuvrate = project.computeVUVRate.output_f
-                def input_mcdist = project.computeMCDIST.output_f
-                def input_rms_dur = project.computeRMSEDur.output_f
 
                 def output_f = new File("${project.configurationAcoustic.output_dir}/global_report.csv")
                 outputs.files output_f
@@ -98,62 +112,24 @@ class TTSAnalysisPlugin implements Plugin<Project>
                     output_f.text = "#id\tmean\tstd\tconfint\n"
 
                     // RMS DUR part
-                    values = []
-                    input_rms_dur.eachLine { line ->
-                        if (line.startsWith("#"))
-                            return; // Continue...
+                    input.each { cur_input ->
+                        values = []
+                        def name = ""
+                        cur_input.eachLine { line ->
+                            if (line.startsWith("#")) {
+                                name = "XXX"
+                                return; // Continue...
+                            }
 
                             def elts = line.split()
                             values << Double.parseDouble(elts[1])
+                        }
+
+                        dist = new Double[values.size()];
+                        values.toArray(dist);
+                        s = new Statistics(dist);
+                        output_f << name << "\t" << s.mean() << "\t" << s.stddev() << "\t" << s.confint(0.05) << "\n"
                     }
-                    dist = new Double[values.size()];
-                    values.toArray(dist);
-                    s = new Statistics(dist);
-                    output_f << "rms dur\t" << s.mean() << "\t" << s.stddev() << "\t" << s.confint(0.05) << "\n"
-
-
-                    // RMS F0 part
-                    values = []
-                    input_rms_f0_cent.eachLine { line ->
-                        if (line.startsWith("#"))
-                            return; // Continue...
-
-                            def elts = line.split()
-                            values << Double.parseDouble(elts[1])
-                    }
-                    dist = new Double[values.size()];
-                    values.toArray(dist);
-                    s = new Statistics(dist);
-                    output_f << "rms f0\t" << s.mean() << "\t" << s.stddev() << "\t" << s.confint(0.05) << "\n"
-
-
-                    // Voice/Unvoice error rate part
-                    values = []
-                    input_vuvrate.eachLine { line ->
-                        if (line.startsWith("#"))
-                            return; // Continue...
-
-                            def elts = line.split()
-                            values << Double.parseDouble(elts[1])
-                    }
-                    dist = new Double[values.size()];
-                    values.toArray(dist);
-                    s = new Statistics(dist);
-                    output_f << "vuvrate\t" << s.mean() << "\t" << s.stddev() << "\t" << s.confint(0.05) << "\n"
-
-                    // Mel CepstralDistorsion part
-                    values = []
-                    input_mcdist.eachLine { line ->
-                        if (line.startsWith("#"))
-                            return; // Continue...
-
-                            def elts = line.split()
-                            values << Double.parseDouble(elts[1])
-                    }
-                    dist = new Double[values.size()];
-                    values.toArray(dist);
-                    s = new Statistics(dist);
-                    output_f << "mcdist\t" << s.mean() << "\t" << s.stddev() << "\t" << s.confint(0.05) << "\n"
                 }
             }
         }
