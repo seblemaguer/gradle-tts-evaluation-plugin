@@ -12,7 +12,7 @@ class ProsodyAnalysis implements AnalysisInterface
 {
     public void addTasks(Project project)
     {
-        project.task("computeRMSEF0Hertz")
+        project.task("computeRMSEF0Hz")
         {
             // Hooking
             dependsOn "configurationAcoustic"
