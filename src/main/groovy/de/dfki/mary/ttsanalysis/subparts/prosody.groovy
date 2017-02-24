@@ -28,7 +28,7 @@ class ProsodyAnalysis implements AnalysisInterface
             outputs.files output_f
 
             doLast {
-                output_f.text = "#id\trms (cent)\n"
+                output_f.text = "#id\trms (Hz)\n"
 
                 project.configurationAcoustic.list_basenames.each { line ->
                     // Loading files
@@ -62,7 +62,7 @@ class ProsodyAnalysis implements AnalysisInterface
 
                     // Compute and dump the distance
                     def alignment = new IDAlignment(nb_frames);
-                    def v = new CentRMS(src, tgt, 0.0);
+                    def v = new F0RMS(src, tgt, 0.0);
                     Double d = v.distancePerUtterance(alignment);
                     output_f << "$line\t$d\n";
                 }

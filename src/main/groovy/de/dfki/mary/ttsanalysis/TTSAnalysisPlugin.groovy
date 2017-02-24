@@ -102,14 +102,14 @@ class TTSAnalysisPlugin implements Plugin<Project>
                 }
 
 
-                def output_f = new File("${project.configurationAcoustic.output_dir}/global_report.csv")
-                outputs.files output_f
+                ext.output_f = new File("${project.configurationAcoustic.output_dir}/global_report.csv")
+                outputs.files ext.output_f
 
                 doLast {
                     def values = []
                     def dist = null
                     def s = null
-                    output_f.text = "#id\tmean\tstd\tconfint\n"
+                    ext.output_f.text = "#id\tmean\tstd\tconfint\n"
 
                     // RMS DUR part
                     input.each { cur_input ->
@@ -117,7 +117,7 @@ class TTSAnalysisPlugin implements Plugin<Project>
                         def name = ""
                         cur_input.eachLine { line ->
                             if (line.startsWith("#")) {
-                                name = "XXX"
+                                name = line.replaceAll(/^#[ ]*id\t/, "")
                                 return; // Continue...
                             }
 
@@ -128,7 +128,7 @@ class TTSAnalysisPlugin implements Plugin<Project>
                         dist = new Double[values.size()];
                         values.toArray(dist);
                         s = new Statistics(dist);
-                        output_f << name << "\t" << s.mean() << "\t" << s.stddev() << "\t" << s.confint(0.05) << "\n"
+                        ext.output_f << name << "\t" << s.mean() << "\t" << s.stddev() << "\t" << s.confint(0.05) << "\n"
                     }
                 }
             }

@@ -28,7 +28,7 @@ class DurationAnalysis implements AnalysisInterface
             outputs.files output_f
 
             doLast {
-                output_f.text = "#id\trms (ms)\n"
+                output_f.text = "#id\trms duration (ms)\n"
 
                 project.configurationAcoustic.list_basenames.each { line ->
 

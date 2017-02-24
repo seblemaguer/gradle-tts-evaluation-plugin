@@ -27,7 +27,7 @@ class SpectrumAnalysis implements AnalysisInterface
             outputs.files output_f
 
             doLast {
-                output_f.text = "#id\tmcdist\n"
+                output_f.text = "#id\tmcdist (dB)\n"
 
                 project.configurationAcoustic.list_basenames.each { line ->
                     // Load files
