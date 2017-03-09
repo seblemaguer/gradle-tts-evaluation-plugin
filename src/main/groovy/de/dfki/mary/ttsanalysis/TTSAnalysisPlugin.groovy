@@ -128,7 +128,9 @@ class TTSAnalysisPlugin implements Plugin<Project>
                         dist = new Double[values.size()];
                         values.toArray(dist);
                         s = new Statistics(dist);
-                        ext.output_f << name << "\t" << s.mean() << "\t" << s.stddev() << "\t" << s.confint(0.05) << "\n"
+                        ext.output_f << name << "\t"
+                        ext.output_f << s.mean() << "\t" << s.stddev() << "\t" << s.confint(0.05) << "\t"
+                        ext.output_f << values.size() << "\n"
                     }
                 }
             }
