@@ -34,11 +34,6 @@ class TTSAnalysisPlugin implements Plugin<Project>
 
         project.sourceCompatibility = JavaVersion.VERSION_1_7
 
-
-        // Create output
-        (new File(project.rootProject.buildDir.toString() + "/acousticAnalysis")).mkdirs()
-
-
         project.repositories {
             jcenter()
             maven {
